@@ -9,6 +9,11 @@ import yaml
 from os.path import basename
 from email.parser import Parser
 from os import path
+import logging
+from binstar_client.utils import compute_hash
+import hashlib
+
+log = logging.getLogger('binstar.detect')
 
 def detect_yaml_attrs(filename):
     tar = tarfile.open(filename)
@@ -93,6 +98,62 @@ def detect_r_attrs(filename):
     return filename, name, version, attrs, summary, description, license
 
 
+def mkreq(name, version, flag):
+    ret = {}
+    version = version and version.rsplit('-', 1)
+    if not version:
+        pass
+    elif len(version) == 2:
+        ret['rel'] = version[1] 
+        ret['ver'] = version[0]
+        ret['epoch'] = 0
+    else:
+        ret['ver'] = version[0]
+        
+        
+    if (flag & 077) == 012:
+        ret['flags'] = 'LE'
+    elif (flag & 077) == 010:
+        ret['flags'] = 'EQ'
+
+    return ret
+    
+
+
+def detect_rpm_attrs(filename):
+    try:
+        import rpmfile
+    except ImportError:
+        log.error("Uploading RPM's requires the rpmfile python module")
+        raise
+
+    basefilename = basename(filename)
+    
+    with rpmfile.open(filename) as rpm:
+        package_name = rpm.headers['name']
+        version = rpm.headers['version']
+        description = rpm.headers['description']
+        summary = rpm.headers['summary']
+        license = rpm.headers['copyright']
+    
+    attrs = {}
+    with open(filename) as fp:
+        sha256, _, _ = compute_hash(fp, hash_algorithm=hashlib.sha256)
+        attrs['sha256'] = sha256
+        
+    attrs['rel'] = rpm.headers.get('release', 1)
+    
+    rname = rpm.headers.get('requirename', [])
+    rversion = rpm.headers.get('requireversion', [])
+    rflags = rpm.headers.get('requireflags', [])
+    attrs['requires'] = {name:mkreq(name, version, flag) for (name, version, flag) in zip(rname, rversion, rflags)}
+    attrs['os'] = rpm.headers['os']
+    attrs['arch'] = rpm.headers['arch']
+    attrs['target'] = rpm.headers['target']
+    attrs['buildtime'] = rpm.headers['buildtime']
+    attrs['provides'] = rpm.headers['provides']
+    
+    return basefilename, package_name, version, attrs, summary, description, license
 #===============================================================================
 # 
 #===============================================================================
@@ -100,6 +161,7 @@ def detect_r_attrs(filename):
 detectors = {'conda':detect_conda_attrs,
              'pypi': detect_pypi_attrs,
              'r': detect_r_attrs,
+             'rpm': detect_rpm_attrs,
              }
 
 
@@ -127,6 +189,9 @@ def is_r(filename):
                 any(name.endswith('/NAMESPACE') for name in tf.getnames())):
                 return True
 
+def is_rpm(filename):
+    return filename.endswith('.rpm')
+    
 def detect_package_type(filename):
     
     if is_conda(filename):
@@ -135,6 +200,8 @@ def detect_package_type(filename):
         return 'pypi'
     elif is_r(filename):
         return 'r'
+    elif is_rpm(filename):
+        return 'rpm'
     else:
         return None
 
