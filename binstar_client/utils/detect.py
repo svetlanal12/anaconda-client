@@ -135,12 +135,16 @@ def detect_rpm_attrs(filename):
         description = rpm.headers['description']
         summary = rpm.headers['summary']
         license = rpm.headers['copyright']
+        archive_size = len(rpm.gzip_file.read())
     
     attrs = {}
     with open(filename) as fp:
         sha256, _, _ = compute_hash(fp, hash_algorithm=hashlib.sha256)
         attrs['sha256'] = sha256
         
+    attrs['header_range'] = rpm.header_range
+    attrs['installed_size'] = rpm.headers['size']
+    attrs['archive_size'] = archive_size
     attrs['rel'] = rpm.headers.get('release', 1)
     
     rname = rpm.headers.get('requirename', [])
@@ -152,6 +156,9 @@ def detect_rpm_attrs(filename):
     attrs['target'] = rpm.headers['target']
     attrs['buildtime'] = rpm.headers['buildtime']
     attrs['provides'] = rpm.headers['provides']
+    attrs['group'] = rpm.headers['group']
+    attrs['buildhost'] = rpm.headers['buildhost']
+    attrs['sourcerpm'] = rpm.headers['sourcerpm']
     
     return basefilename, package_name, version, attrs, summary, description, license
 #===============================================================================
