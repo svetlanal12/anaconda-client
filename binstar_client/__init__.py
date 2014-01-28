@@ -11,6 +11,7 @@ from binstar_client.mixins.publish import PublishMixin
 from binstar_client.mixins.collections import CollectionsMixin
 from binstar_client.mixins.organizations import OrgMixin
 from binstar_client.utils.http_codes import STATUS_CODES
+from binstar_client.mixins.trust import TrustMixin
 
 
 __version__ = '0.4.3'
@@ -20,7 +21,7 @@ __version__ = '0.4.3'
 # import urllib2
 # register_openers()
 
-class Binstar(PublishMixin, CollectionsMixin, OrgMixin):
+class Binstar(PublishMixin, CollectionsMixin, OrgMixin, TrustMixin):
     '''
     An object that represents interfaces with the binstar.org restful API.
 
