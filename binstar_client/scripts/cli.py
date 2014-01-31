@@ -44,7 +44,7 @@ def main():
                         dest='log_level',
                         default=logging.INFO, const=logging.DEBUG)
     parser.add_argument('-V', '--version', action='version',
-                        version="%%(prog)s Command line client (version %s)" % (version,))
+                        version="%%(prog)s command line client (version %s)" % (version,))
     subparsers = parser.add_subparsers(help='commands')
 
     for command in sub_commands():

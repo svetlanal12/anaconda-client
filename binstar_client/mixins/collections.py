@@ -26,6 +26,32 @@ class CollectionsMixin(object):
         res = self.session.get(url, verify=True)
         self._check_response(res, [200])
         return res.json()
+    
+    def collection_attach_metadata(self, org, name, key, value):
+        '''
+        Attach arbitrary metadata to a collection
+
+        :param org: the organization username
+        :param name: the name of the collection
+        '''
+
+        url = '%s/collections/%s/%s/metadata/%s' % (self.domain, org, name, key)
+        res = self.session.post(url, data=value, verify=True)
+        self._check_response(res, [201])
+        return
+
+    def collection_get_metadata(self, org, name, key, *d):
+        '''
+        Get arbitrary metadata from a collection
+
+        :param org: the organization username
+        :param name: the name of the collection
+        '''
+
+        url = '%s/collections/%s/%s/metadata/%s' % (self.domain, org, name, key)
+        res = self.session.get(url, verify=True)
+        self._check_response(res)
+        return res.text 
 
     def collection_add_packages(self, org, name, owner_package_data=(), owner=None, package=None):
 

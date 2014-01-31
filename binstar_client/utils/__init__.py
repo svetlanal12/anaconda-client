@@ -17,8 +17,13 @@ import sys
 from ..errors import UserError
 import json
 import urllib
+from binstar_client import errors
+import logging
+from os import makedirs
+from logging.handlers import RotatingFileHandler
+from binstar_client.utils.handlers import MyStreamHandler
 
-
+logger = logging.getLogger('binstar')
 
 def jencode(payload):
     return base64.b64encode(json.dumps(payload))
@@ -241,3 +246,42 @@ def bool_input(prompt, default=True):
                 return False
             else:
                 print 'please enter yes or no'
+
+
+def setup_logging(args):
+
+    if not exists(USER_LOGDIR): makedirs(USER_LOGDIR)
+
+    logger = logging.getLogger('binstar')
+    logger.setLevel(logging.DEBUG)
+
+    error_logfile = join(USER_LOGDIR, 'cli.log')
+    hndlr = RotatingFileHandler(error_logfile, maxBytes=10 * (1024 ** 2), backupCount=5,)
+    hndlr.setLevel(logging.INFO)
+    logger.addHandler(hndlr)
+
+    shndlr = MyStreamHandler()
+    shndlr.setLevel(args.log_level)
+    logger.addHandler(shndlr)
+
+def wrap_main(main, args):
+    from binstar_client.commands.login import interactive_login
+    try:
+        try:
+            return main(args)
+        except errors.Unauthorized as err:
+            if not args.token:
+                print 'The action you are performing requires authentication, please sign in:'
+                interactive_login()
+                return args.main(args)
+            else:
+                raise
+
+    except errors.ShowHelp as err:
+        args.sub_parser.print_help()
+        raise SystemExit(-1)
+    except (errors.BinstarError, KeyboardInterrupt) as err:
+        if args.show_traceback:
+            raise
+        logger.exception(err.message)
+        raise SystemExit(-1)

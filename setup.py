@@ -3,20 +3,23 @@
 '''
 
 from setuptools import setup, find_packages
-
-import binstar_client
+try:
+    from binstar_client import __version__ as version
+except:
+    version = 'dev'
+    
 setup(
     name='binstar',
-    version=binstar_client.__version__,
+    version=version,
     author='Sean Ross-Ross',
     author_email='srossross@gmail.com',
     url='http://github.com/Binstar/binstar_client',
     packages=find_packages(),
-    install_requires=['keyring',
-                      'requests>=2.0',
+    install_requires=['requests>=2.0',
                       'pyyaml',
                       'python-dateutil',
-                      'pytz'],
+                      'pytz',
+                      'PyCrypto'],
     entry_points={
           'console_scripts': [
               'binstar = binstar_client.scripts.cli:main',

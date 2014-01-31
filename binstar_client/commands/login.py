@@ -2,17 +2,31 @@
 Authenticate a user
 '''
 import getpass
-from binstar_client.utils import get_config, get_binstar, store_token
+from binstar_client.utils import get_config, get_binstar, store_token,\
+    remove_token
 from binstar_client.errors import Unauthorized, BinstarError
 import sys
 import logging
 import socket
+from binstar_client import errors
 
 log = logging.getLogger('binstar.login')
 
 def interactive_get_token():
+    
+    
     bs = get_binstar()
     config = get_config()
+
+    try:
+        bs.user()
+    except errors.Unauthorized:
+        pass
+    else:
+        auth = bs.authentication()
+        bs.remove_authentication(auth['id'])
+        remove_token()
+
 
     url = config.get('url', 'https://api.binstar.org')
 
@@ -36,6 +50,7 @@ def interactive_get_token():
     return token
 
 def interactive_login():
+
 
     token = interactive_get_token()
     store_token(token)
