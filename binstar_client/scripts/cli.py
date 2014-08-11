@@ -2,7 +2,7 @@
 Binstar command line utility
 '''
 from __future__ import print_function, unicode_literals
-from argparse import ArgumentParser
+
 from binstar_client import __version__ as version
 from binstar_client.commands import sub_commands
 from binstar_client.commands.login import interactive_login
@@ -13,6 +13,8 @@ from logging.handlers import RotatingFileHandler
 from os import makedirs
 from os.path import join, exists
 import logging
+from binstar_client.utils.wild_card_parser import WildCardArgumentParser
+from argparse import ArgumentParser
 
 
 logger = logging.getLogger('binstar')
@@ -35,7 +37,8 @@ def setup_logging(args):
 def main(args=None, exit=True):
 
 
-    parser = ArgumentParser(description=__doc__)
+    parser = WildCardArgumentParser(description=__doc__)
+#     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--show-traceback', action='store_true')
     parser.add_argument('-t', '--token')
     parser.add_argument('-v', '--verbose',

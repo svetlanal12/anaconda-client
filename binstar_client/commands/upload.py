@@ -20,6 +20,7 @@ import argparse
 import logging
 import sys
 import re
+from ast import literal_eval
 
 # Python 3 Support
 try:
@@ -77,7 +78,7 @@ def get_package_name(args, package_attrs, filename, package_type):
         package_name = args.package
     else:
         if 'name' not in package_attrs:
-            raise BinstarError("Could not detect package name for package type %s, please use the --package option" % (package_type,))
+            raise BinstarError("Could not detect package name for package type %s, please use the --package.name option" % (package_type,))
         package_name = package_attrs['name']
 
     return package_name
@@ -88,7 +89,7 @@ def get_version(args, release_attrs, package_type):
         version = args.version
     else:
         if 'version' not in release_attrs:
-            raise BinstarError("Could not detect package version for package type %s, please use the --version option" % (package_type,))
+            raise BinstarError("Could not detect package version for package type %s, please use the --release.version option" % (package_type,))
         version = release_attrs['version']
     return version
 
@@ -105,7 +106,7 @@ def add_package(binstar, args, username, package_name, package_attrs, package_ty
                 summary = args.summary
             else:
                 if 'summary' not in package_attrs:
-                    raise BinstarError("Could not detect package summary for package type %s, please use the --summary option" % (package_type,))
+                    raise BinstarError("Could not detect package summary for package type %s, please use the --package.summary option" % (package_type,))
                 summary = package_attrs['summary']
 
             binstar.add_package(username, package_name, summary, package_attrs.get('license'),
@@ -139,6 +140,16 @@ def remove_existing_file(binstar, args, username, package_name, version, file_at
                 return True
 
 
+def dotted_update(attrs, dotted_attrs):
+    if not dotted_attrs:
+        return
+    for dotted_key, value in dotted_attrs.items():
+        store_to = attrs
+        while '.' in dotted_key:
+            key, dotted_key = dotted_key.split('.', 1)
+            store_to = store_to.setdefault(key, {})
+        store_to[dotted_key] = value
+
 def main(args):
 
     binstar = get_binstar(args)
@@ -166,6 +177,9 @@ def main(args):
             if args.show_traceback:
                 raise
             raise BinstarError('Trouble reading metadata from %r. Is this a valid %s package' % (filename, package_type))
+        dotted_update(package_attrs, args.package_attrs)
+        dotted_update(release_attrs, args.release_attrs)
+        dotted_update(file_attrs, args.file_attrs)
 
         if args.build_id:
             file_attrs['attrs']['binstar_build'] = args.build_id
@@ -209,7 +223,11 @@ def main(args):
         package_url = upload_info.get('url', 'https://binstar.org/%s/%s' % (username, package))
         log.info("Package located at:\n%s\n" % package_url)
 
-
+def try_eval(value):
+    try:
+        return literal_eval(try_eval)
+    except ValueError:
+        return value
 def add_parser(subparsers):
 
     parser = subparsers.add_parser('upload',
@@ -229,6 +247,13 @@ def add_parser(subparsers):
     parser.add_argument('-s', '--summary', help='Set the summary of the package')
     parser.add_argument('-t', '--package-type', help='Set the package type, defaults to autodetect')
     parser.add_argument('-d', '--description', help='description of the file(s)')
+
+    parser.add_argument(r'--package\.(.+)', action='wildcard', help='Set metadata for the package',
+                        dest='package_attrs', metavar='PACKAGE_ATTR', type=try_eval)
+    parser.add_argument(r'--release\.(.+)', action='wildcard', help='Set metadata for the release',
+                        dest='release_attrs', metavar='RELEASE_ATTR', type=try_eval)
+    parser.add_argument(r'--file\.(.+)', action='wildcard', help='Set metadata for the release',
+                        dest='file_attrs', metavar='FILE_ATTR', type=try_eval)
 
     parser.add_argument("--no-register", action="store_true", default=False)
     parser.add_argument('--build-id', help='Binstar-Build ID (internal only)')
