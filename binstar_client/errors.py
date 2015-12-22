@@ -53,3 +53,11 @@ class PillowNotInstalled(BinstarError):
         self.msg = ("pillow is not installed. Install it with:\n"
                     "    conda install pillow")
         super(BinstarError, self).__init__(self.msg)
+
+
+class InvalidPackageSpec(UserError, ValueError):
+    def __init__(self, *args, **kwargs):
+        UserError.__init__(self, *args, **kwargs)
+        ValueError.__init__(self, *args, **kwargs)
+        self.message = args[0]
+        self.msg = args[0]
