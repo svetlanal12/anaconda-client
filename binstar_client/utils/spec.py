@@ -29,7 +29,6 @@ class PackageSpec(object):
             self.spec_str = spec_str
 
 
-
     def __str__(self):
         return self.spec_str
 
@@ -79,7 +78,7 @@ def parse_spec(spec):
     '''
     if not spec.startswith('@'):
         raise InvalidPackageSpec(
-            'User specification should start with "@": %r' % spec)
+            'At symbol "@" required before user name: %r' % spec)
 
     label = package = version = None
     user = spec[1:]
@@ -93,8 +92,18 @@ def parse_spec(spec):
                 'Incomplete label name: %r' % spec)
 
         user, label, remain = user[:open_index], user[open_index+1:close_index], user[close_index+1:]
-    
 
+    elif '/' in user:
+        slash_index = user.find('/')
+        user, remain = user[:slash_index], user[slash_index:]
+    else:
+        remain = None
+
+    if remain:
+        if not remain.startswith('/'):
+            raise InvalidPackageSpec(
+                'Forward slash "/" required before package name: %r' % spec)
+        package = remain[1:]
 
     return PackageSpec(
         user=user,
