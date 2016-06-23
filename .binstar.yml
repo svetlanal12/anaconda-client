@@ -13,6 +13,7 @@ engine:
  - python=3.5
 
 install:
+  - conda update conda conda-env 
   - conda install pip setuptools clyent pillow psutil
   - pip install coverage==3.7.1 mock
   - python setup.py develop
