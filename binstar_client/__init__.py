@@ -489,15 +489,17 @@ class Binstar(OrgMixin, ChannelsMixin, PackageMixin):
             size = fd.tell() - spos
             fd.seek(spos)
 
-        s3data['Content-Length'] = size
-        s3data['Content-MD5'] = b64md5
-
+        # s3data['Content-Length'] = size
+        # s3data['Content-MD5'] = b64md5
+        s3data.pop('content-type', None)
+        s3data.pop('Content-Type', None)
+        s3data.pop('x-amz-server-side-encryption')
         data_stream, headers = stream_multipart(s3data, files={'file':(basename, fd)},
                                                 callback=callback)
-
+        headers['x-amz-server-side-encryption'] = 'AES256'
         s3res = requests.post(s3url, data=data_stream, verify=self.session.verify, timeout=10 * 60 * 60, headers=headers)
 
-        if s3res.status_code != 201:
+        if s3res.status_code not in (201, 204):
             log.info(s3res.text)
             log.info('')
             log.info('')
